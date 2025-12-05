@@ -5,31 +5,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LeafDecoration } from "@/components/LeafDecoration";
 import { toast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isLogin) {
-      // Mock login
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await api.login(email, password);
+        toast({
+          title: "Вход выполнен",
+          description: "Добро пожаловать!",
+        });
+        navigate("/catalog");
+      } else {
+        await api.register(email, password, name);
+        toast({
+          title: "Регистрация успешна",
+          description: "Пройдите короткий тест для подбора растений",
+        });
+        navigate("/quiz");
+      }
+    } catch (error: any) {
       toast({
-        title: "Вход выполнен",
-        description: "Добро пожаловать!",
+        title: "Ошибка",
+        description: error.message || "Произошла ошибка при авторизации",
+        variant: "destructive",
       });
-      navigate("/catalog");
-    } else {
-      // Mock registration - redirect to quiz
-      toast({
-        title: "Регистрация начата",
-        description: "Пройдите короткий тест для подбора растений",
-      });
-      navigate("/quiz");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,9 +105,10 @@ const Auth = () => {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-lg"
             >
-              Вход
+              {loading ? "Загрузка..." : "Вход"}
             </Button>
           </form>
 

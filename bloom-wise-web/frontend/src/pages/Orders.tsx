@@ -1,15 +1,31 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { LeafDecoration } from "@/components/LeafDecoration";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 const Orders = () => {
   const navigate = useNavigate();
 
-  const orders = [
-    { id: "01010101", date: "15.03.2025", status: "В обработке" },
-    { id: "02020202", date: "10.03.2025", status: "Доставлен" },
-    { id: "03030303", date: "05.03.2025", status: "Доставлен" },
-  ];
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['orders'],
+    queryFn: () => api.getOrders(),
+  });
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('ru-RU');
+  };
+
+  const getStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      pending: 'В обработке',
+      processing: 'В обработке',
+      shipped: 'Отправлен',
+      delivered: 'Доставлен',
+      cancelled: 'Отменен',
+    };
+    return statusMap[status] || status;
+  };
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -28,20 +44,38 @@ const Orders = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl space-y-4">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="bg-card rounded-3xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => navigate(`/order/${order.id}`)}
-          >
-            <h3 className="text-xl font-semibold text-foreground mb-2">Заказ {order.id}</h3>
-            <p className="text-muted-foreground">детали заказа</p>
-            <div className="mt-4 flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">{order.date}</p>
-              <p className="text-sm font-medium text-primary">{order.status}</p>
-            </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Загрузка заказов...</p>
           </div>
-        ))}
+        ) : orders.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">У вас пока нет заказов</p>
+          </div>
+        ) : (
+          orders.map((order: any) => (
+            <div
+              key={order.id}
+              className="bg-card rounded-3xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/order/${order.id}`)}
+            >
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                Заказ {order.id.slice(0, 8)}
+              </h3>
+              <p className="text-muted-foreground">
+                Итого: {Math.round(order.total)}₽
+              </p>
+              <div className="mt-4 flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(order.createdAt)}
+                </p>
+                <p className="text-sm font-medium text-primary">
+                  {getStatusText(order.status)}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

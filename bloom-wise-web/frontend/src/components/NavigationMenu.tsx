@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, User, Heart, ShoppingCart, Home } from "lucide-react";
+import { Menu, X, User, Heart, ShoppingCart, Home, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Sheet,
@@ -7,17 +7,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { api } from "@/lib/api";
 
 export const NavigationMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const user = api.getCurrentUser();
 
   const menuItems = [
     { title: "Главная", path: "/catalog", icon: Home },
     { title: "Избранное", path: "/favorites", icon: Heart },
     { title: "Заказы", path: "/orders", icon: ShoppingCart },
     { title: "Профиль", path: "/profile", icon: User },
+    ...(user?.role === 'admin' ? [{ title: "Админ-панель", path: "/admin", icon: Settings }] : []),
   ];
 
   const handleNavigate = (path: string) => {

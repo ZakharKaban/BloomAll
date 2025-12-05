@@ -3,13 +3,29 @@ import { ArrowLeft, Edit, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeafDecoration } from "@/components/LeafDecoration";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 const Profile = () => {
   const navigate = useNavigate();
 
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => api.getProfile(),
+    onSuccess: (data) => {
+      // Update stored user with latest data including role
+      if (data) {
+        localStorage.setItem('user', JSON.stringify(data));
+      }
+    },
+  });
+
   const handleLogout = () => {
+    api.logout();
     navigate("/auth");
   };
+
+  const user = profile || api.getCurrentUser();
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -28,31 +44,43 @@ const Profile = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
-        {/* User Info */}
-        <div className="bg-card rounded-3xl p-8">
-          <div className="flex flex-col items-center mb-6">
-            <Avatar className="w-24 h-24 mb-4">
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                И
-              </AvatarFallback>
-            </Avatar>
-            <h2 className="text-2xl font-semibold text-foreground">Имя</h2>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Загрузка профиля...</p>
           </div>
-
-          <div className="space-y-4">
-            <div className="bg-background rounded-2xl p-6">
-              <p className="text-sm text-muted-foreground mb-1">Имя</p>
-              <p className="text-foreground font-medium">Имя 1</p>
-            </div>
-            <div className="bg-background rounded-2xl p-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Почта</p>
-                <p className="text-foreground font-medium">почта@mail.ru</p>
+        ) : user ? (
+          <>
+            {/* User Info */}
+            <div className="bg-card rounded-3xl p-8">
+              <div className="flex flex-col items-center mb-6">
+                <Avatar className="w-24 h-24 mb-4">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                    {user.name?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="text-2xl font-semibold text-foreground">{user.name}</h2>
               </div>
-              <Edit className="text-muted-foreground" size={20} />
+
+              <div className="space-y-4">
+                <div className="bg-background rounded-2xl p-6">
+                  <p className="text-sm text-muted-foreground mb-1">Имя</p>
+                  <p className="text-foreground font-medium">{user.name}</p>
+                </div>
+                <div className="bg-background rounded-2xl p-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Почта</p>
+                    <p className="text-foreground font-medium">{user.email}</p>
+                  </div>
+                  <Edit className="text-muted-foreground" size={20} />
+                </div>
+              </div>
             </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Не удалось загрузить профиль</p>
           </div>
-        </div>
+        )}
 
         {/* Navigation Links */}
         <div className="bg-card rounded-3xl overflow-hidden">
@@ -69,22 +97,38 @@ const Profile = () => {
             <p className="text-foreground font-medium">Заказы</p>
           </button>
           <button
+            onClick={() => navigate("/quiz-result")}
+            className="w-full p-6 text-left border-b border-border hover:bg-muted transition-colors"
+          >
+            <p className="text-foreground font-medium">Результаты теста</p>
+          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate("/admin")}
+              className="w-full p-6 text-left border-b border-border hover:bg-muted transition-colors"
+            >
+              <p className="text-foreground font-medium">Админ-панель</p>
+            </button>
+          )}
+          <button
             onClick={() => navigate("/catalog")}
             className="w-full p-6 text-left hover:bg-muted transition-colors"
           >
-            <p className="text-foreground font-medium">Профиль</p>
+            <p className="text-foreground font-medium">Каталог</p>
           </button>
         </div>
 
         {/* Logout */}
-        <Button
-          onClick={handleLogout}
-          variant="outline"
-          className="w-full h-14 rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-        >
-          <LogOut className="mr-2" size={20} />
-          Выйти
-        </Button>
+        {user && (
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="w-full h-14 rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <LogOut className="mr-2" size={20} />
+            Выйти
+          </Button>
+        )}
       </div>
     </div>
   );

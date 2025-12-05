@@ -2,16 +2,46 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeafDecoration } from "@/components/LeafDecoration";
-import plant1 from "@/assets/plant-1.png";
-import plant2 from "@/assets/plant-2.png";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 const Favorites = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const favorites = [
-    { id: 1, name: "Монстера", price: "от 1500₽", image: plant1 },
-    { id: 2, name: "Потос", price: "от 800₽", image: plant2 },
-  ];
+  const { data: favorites = [], isLoading } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: () => api.getFavorites(),
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: (plantId: string) => api.removeFavorite(plantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      toast({
+        title: "Удалено",
+        description: "Растение удалено из избранного",
+      });
+    },
+  });
+
+  const handleAddToCart = async (plantId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.addToCart(plantId);
+      toast({
+        title: "Добавлено в корзину",
+        description: "Товар успешно добавлен",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось добавить в корзину",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -30,47 +60,58 @@ const Favorites = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {favorites.map((plant) => (
-            <div
-              key={plant.id}
-              className="bg-card rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer group"
-              onClick={() => navigate(`/plant/${plant.id}`)}
-            >
-              <div className="aspect-square bg-muted flex items-center justify-center p-8">
-                <img
-                  src={plant.image}
-                  alt={plant.name}
-                  className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                />
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Загрузка избранного...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {favorites.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">Избранное пусто</p>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-foreground mb-2">{plant.name}</h3>
-                <p className="text-muted-foreground mb-4">{plant.price}</p>
-                <div className="flex gap-3">
-                  <Button
-                    className="flex-1 rounded-full bg-primary hover:bg-primary/90"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    В корзину
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    <Heart size={20} fill="currentColor" />
-                  </Button>
+            ) : (
+              favorites.map((plant: any) => (
+                <div
+                  key={plant.id}
+                  className="bg-card rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer group"
+                  onClick={() => navigate(`/plant/${plant.id}`)}
+                >
+                  <div className="aspect-square bg-muted flex items-center justify-center p-8">
+                    <img
+                      src={plant.imageUrl || "/placeholder.svg"}
+                      alt={plant.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-2">{plant.name}</h3>
+                    <p className="text-muted-foreground mb-4">от {plant.price}₽</p>
+                    <div className="flex gap-3">
+                      <Button
+                        className="flex-1 rounded-full bg-primary hover:bg-primary/90"
+                        onClick={(e) => handleAddToCart(plant.id, e)}
+                      >
+                        В корзину
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFavoriteMutation.mutate(plant.id);
+                        }}
+                      >
+                        <Heart size={20} fill="currentColor" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
