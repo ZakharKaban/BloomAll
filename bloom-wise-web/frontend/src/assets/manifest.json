@@ -1,0 +1,24 @@
+{
+  "name": "Подоконник - Комнатные растения с доставкой",
+  "short_name": "Подоконник",
+  "description": "Выберите и купите комнатные растения онлайн. Получите рекомендации по уходу за растениями и скидку 10% на первый заказ!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4ade80",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
